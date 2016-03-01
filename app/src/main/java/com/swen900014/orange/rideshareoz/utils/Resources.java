@@ -9,8 +9,10 @@ import com.google.android.gms.maps.model.LatLngBounds;
  */
 public class Resources
 {
+//    public final static String SERVER_CLIENT_ID =
+//            "728068031979-l803m9527jv2ks6hh4qm8sg6nqr8thgl.apps.googleusercontent.com";
     public final static String SERVER_CLIENT_ID =
-            "728068031979-l803m9527jv2ks6hh4qm8sg6nqr8thgl.apps.googleusercontent.com";
+            "304263974763-1oos68b5ke5n27bhegc31evkbkhfafs5.apps.googleusercontent.com";
     public static final LatLngBounds BOUNDS_GREATER_MELBOURNE = new LatLngBounds(
             new LatLng(-38.260720, 144.394492), new LatLng(-37.459846, 145.764740));
 
