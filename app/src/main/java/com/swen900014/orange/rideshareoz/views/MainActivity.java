@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements
 
     /* Request code used to invoke sign in user interactions. */
     private final static int RC_SIGN_IN = 0;
+    private final static int REQD_SIGN_IN = 1;
 
     /* Client used to interact with Google APIs. */
     private static GoogleApiClient mGoogleApiClient;
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private MyRidesFragment activityFragment;
     private boolean signedIn;
+    public  static String _token = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -89,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements
                 .addApi(Plus.API)
                 .addScope(Plus.SCOPE_PLUS_LOGIN)
                 .addScope(Plus.SCOPE_PLUS_PROFILE)
-                .addScope(Plus.SCOPE_PLUS_LOGIN)
                 .build();
         mGoogleApiClient.connect();
 
@@ -209,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements
     {
         super.onStart();
         //ReAuthentication is not required
-        //mGoogleApiClient.connect();
+//        mGoogleApiClient.connect();
 
     }
 
@@ -242,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onConnectionSuspended(int i)
     {
-
+//        mGoogleApiClient.connect();
     }
 
     // Button event for the Offer ride button
@@ -312,6 +314,8 @@ public class MainActivity extends AppCompatActivity implements
 
             mIsResolving = false;
             mGoogleApiClient.connect();
+        }else if(requestCode == REQD_SIGN_IN){
+            new GetUserIDTask().execute();
         }
     }
 
@@ -353,6 +357,7 @@ public class MainActivity extends AppCompatActivity implements
         User.setCurrentUser(new User(account.name, account.name, "0", "0"));
 
         //Send Authentication Token to server and set current User
+        Log.d("google","google"+account.name);
         new GetUserIDTask().execute();
 
         setContentView(R.layout.activity_myrides);
@@ -387,8 +392,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    public static String getAuthToken(Context context)
-    {
+    public String checkToken(Context context){
         if (!mGoogleApiClient.isConnected())
         {
             mGoogleApiClient.connect();
@@ -398,22 +402,37 @@ public class MainActivity extends AppCompatActivity implements
 
         String accountName = Plus.AccountApi.getAccountName(mGoogleApiClient);
 
+        Log.d("googelname","googlename"+accountName);
+
         Account account = new Account(accountName, GoogleAuthUtil.GOOGLE_ACCOUNT_TYPE);
-        String scopes = "audience:server:client_id:" + SERVER_CLIENT_ID; // Not the app's client ID.
+//        String scopes = "audience:server:client_id:" + SERVER_CLIENT_ID; // Not the app's client ID.
+        String scopes = "oauth2:profile email";
 
         try
         {
-            return GoogleAuthUtil.getToken(context, account, scopes);
+            _token = GoogleAuthUtil.getToken(context, account, scopes);
+            return getAuthToken(context);
+        } catch (UserRecoverableAuthException e)
+        {
+            e.printStackTrace();
+            Log.e(TAG, "Error retrieving ID token.", e);
+            startActivityForResult(e.getIntent(), REQD_SIGN_IN);
+            return null;
         } catch (IOException e)
         {
             e.printStackTrace();
             Log.e(TAG, "Error retrieving ID token.", e);
             return null;
-        } catch (GoogleAuthException e)
+        }catch (GoogleAuthException e)
         {
             Log.e(TAG, "Error retrieving ID token - auth exception.", e);
             return null;
         }
+
+    }
+    public static String getAuthToken(Context context)
+    {
+      return _token;
     }
 
     /**
@@ -444,13 +463,13 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 return "";
             }
-            return getAuthToken(getApplicationContext());
+            return checkToken(getApplicationContext());
         }
 
         @Override
         protected void onPostExecute(String result)
         {
-            Log.i(TAG, "ID token: " + result);
+            Log.d("googletoken", "googletoken " + result);
             if (result != null)
             {
                 // Successfully retrieved ID Token
